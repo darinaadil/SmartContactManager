@@ -1,46 +1,13 @@
-import json
-import os
-
-class Contact:
-    def __init__(self, name, phone, email, group):
-        self.name = name
-        self.phone = phone
-        self.email = email
-        self.group = group
-
-    def to_dict(self):
-        return {
-            "name": self.name, 
-            "phone": self.phone, 
-            "email": self.email, 
-            "group": self.group
-        }
-
-    @staticmethod
-    def from_dict(data):
-        return Contact(data['name'], data['phone'], data['email'], data['group'])
-
-    def __str__(self):
-        return f"{self.name:<15} | {self.phone:<15} | {self.group:<10} | {self.email}"
+from models import Contact
+from storage import StorageHandler
 
 class ContactManager:
-    def __init__(self, filename='contacts.json'):
-        self.filename = filename
-        self.contacts = self.load_from_file()
-
-    def load_from_file(self):
-        if os.path.exists(self.filename):
-            with open(self.filename, 'r', encoding='utf-8') as f:
-                try:
-                    data = json.load(f)
-                    return [Contact.from_dict(item) for item in data]
-                except:
-                    return []
-        return []
+    def __init__(self, filename='data.json'):
+        self.storage = StorageHandler(filename)
+        self.contacts = self.storage.load_contacts()
 
     def save_to_file(self):
-        with open(self.filename, 'w', encoding='utf-8') as f:
-            json.dump([c.to_dict() for c in self.contacts], f, indent=4, ensure_ascii=False)
+        self.storage.save_contacts(self.contacts)
 
     def add(self, name, phone, email, group):
         new_contact = Contact(name, phone, email, group)
@@ -59,55 +26,64 @@ class ContactManager:
         return False
 
 def main():
-    manager = ContactManager()
+    print("=== SmartContact Manager Setup ===")
+    print("1. Work with JSON (data.json)")
+    print("2. Work with CSV (data.csv)")
+    storage_choice = input("Select storage format (1-2): ")
+    
+    filename = 'data.csv' if storage_choice == '2' else 'data.json'
+    manager = ContactManager(filename)
+    print(f" Storage file configured: {filename}")
     
     while True:
         print("\n=== SmartContact Manager ===")
-        print("1. Показать все контакты")
-        print("2. Добавить новый контакт")
-        print("3. Поиск (по имени/номеру)")
-        print("4. Удалить контакт")
-        print("5. Выход")
+        print("1. Show all contacts")
+        print("2. Add new contact")
+        print("3. Search (by name/phone)")
+        print("4. Delete contact")
+        print("5. Exit")
         
-        choice = input("\nВыберите действие (1-5): ")
+        choice = input("\nSelect an option (1-5): ")
         
         if choice == '1':
             print("\n" + "="*60)
-            print(f"{'Имя':<15} | {'Телефон':<15} | {'Группа':<10} | {'Email'}")
+            print(f"{'Name':<15} | {'Phone':<15} | {'Group':<10} | {'Email'}")
             print("-" * 60)
             if not manager.contacts:
-                print("Список контактов пуст.")
+                print("Contact list is empty.")
             for c in manager.contacts:
                 print(c)
                 
         elif choice == '2':
-            name = input("Введите имя: ")
-            phone = input("Введите телефон: ")
-            email = input("Введите email: ")
-            group = input("Введите группу (Family/Work/Friends): ")
+            name = input("Enter name: ")
+            phone = input("Enter phone number: ")
+            email = input("Enter email: ")
+            group = input("Enter group (Family/Work/Friends): ")
             manager.add(name, phone, email, group)
-            print("✅ Контакт успешно добавлен!")
+            print("✅ Contact successfully added!")
             
         elif choice == '3':
-            q = input("Введите запрос для поиска: ")
+            q = input("Enter search query: ")
             results = manager.search(q)
             if results:
-                print("\nНайдено:")
-                for r in results: print(r)
+                print("\nResults found:")
+                for r in results: 
+                    print(r)
             else:
-                print("Ничего не найдено.")
+                print("No records found.")
                 
         elif choice == '4':
-            name_to_del = input("Введите имя контакта для удаления: ")
+            name_to_del = input("Enter the name of the contact to delete: ")
             if manager.delete(name_to_del):
-                print(f"🗑 Контакт '{name_to_del}' удален.")
+                print(f"🗑 Contact '{name_to_del}' has been deleted.")
             else:
-                print("❌ Контакт не найден.")
+                print("❌ Contact not found.")
                 
         elif choice == '5':
+            print("Exiting application. Have a great day!")
             break
         else:
-            print("Неверный ввод.")
+            print("Invalid choice. Please try again.")
 
 if __name__ == "__main__":
     main()
